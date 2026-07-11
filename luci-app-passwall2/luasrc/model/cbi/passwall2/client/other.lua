@@ -248,7 +248,7 @@ end
 -- [[ Connectivity Check Sites ]]--
 s = m:section(TypedSection, "status_check", translate("Connectivity Check Sites"),
 	translate("Customize the connectivity check sites shown on the status page.") .. "<br />" ..
-	translate("If no site is defined here, the default sites (Baidu/Google/GitHub) will be used.") .. "<br />" ..
+	translate("Sites defined here are shown in the 'Custom' tab on the status page.") .. "<br />" ..
 	translate("Icon URL is optional, the favicon of the site will be used by default."))
 s.template = "cbi/tblsection"
 s.anonymous = true

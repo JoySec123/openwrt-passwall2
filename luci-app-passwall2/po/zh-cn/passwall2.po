@@ -2467,3 +2467,36 @@ msgstr "图标地址"
 
 msgid "The rule is skipped while its list is empty."
 msgstr "列表为空时该规则自动跳过（不生效）。"
+
+msgid "Common"
+msgstr "常用"
+
+msgid "Cloud"
+msgstr "云服务"
+
+msgid "Social"
+msgstr "社交"
+
+msgid "Custom"
+msgstr "自定义"
+
+msgid "Baidu"
+msgstr "百度"
+
+msgid "Google"
+msgstr "谷歌"
+
+msgid "Qwen"
+msgstr "通义千问"
+
+msgid "Aliyun"
+msgstr "阿里云"
+
+msgid "Tencent Cloud"
+msgstr "腾讯云"
+
+msgid "Huawei Cloud"
+msgstr "华为云"
+
+msgid "Sites defined here are shown in the 'Custom' tab on the status page."
+msgstr "此处定义的网站会显示在状态页的「自定义」页签中。"
