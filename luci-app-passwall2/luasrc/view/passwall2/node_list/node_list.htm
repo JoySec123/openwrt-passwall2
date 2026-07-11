@@ -679,7 +679,7 @@ table td, .table .td {
 									const cache_data = {
 										dom_id: strs[i],
 										timestamp: Date.now(),
-										savetime: 60 * 1000,
+										savetime: 300 * 1000,
 										value: ping
 									};
 									text = result.ping + " ms";
@@ -723,7 +723,10 @@ table td, .table .td {
 					_xhr(task).then(thread);
 				}
 			}
-			for (let i = 0; i < 20; i++) {
+			// keep concurrency low: every ping request occupies a uhttpd slot and
+			// forks a LuCI process on the router, 20 parallel requests make the
+			// whole web UI laggy when there are many nodes
+			for (let i = 0; i < 5; i++) {
 				thread()
 			}
 		}

@@ -1,5 +1,31 @@
 <%
 local api = require "luci.passwall2.api"
+local appname = api.appname
+local checks = {}
+api.uci:foreach(appname, "status_check", function(cs)
+	if cs.enabled ~= "0" and cs.url and cs.url ~= "" then
+		local host = cs.url:match("^https?://([^/:]+)")
+		local icon = cs.icon
+		if not icon or icon == "" then
+			local proto = cs.url:match("^(https?)://") or "https"
+			icon = host and (proto .. "://" .. host .. "/favicon.ico") or ""
+		end
+		checks[#checks + 1] = {
+			id = cs[".name"],
+			remarks = cs.remarks or host or cs.url,
+			url = cs.url,
+			icon = icon
+		}
+	end
+end)
+local bar_sites = checks
+if #bar_sites == 0 then
+	bar_sites = {
+		{remarks = "Baidu", url = "https://www.baidu.com", icon = "https://www.baidu.com/favicon.ico"},
+		{remarks = "Google", url = "https://www.google.com", icon = "https://www.google.com/favicon.ico"},
+		{remarks = "GitHub", url = "https://github.com", icon = "https://github.com/favicon.ico"},
+	}
+end
 -%>
 
 <style>
@@ -95,6 +121,22 @@ https://github.com/pure-css/pure/blob/master/LICENSE.md
 				</div>
 			</div>
 		</div>
+<% if #checks > 0 then %>
+<% for _, c in ipairs(checks) do %>
+		<div class="pure-u-1-4 check" onclick="check_connect('<%=c.id%>', '<%=pcdata(c.url)%>')">
+			<div class="block pure-g">
+				<div class="pure-u-1-3">
+					<div class="img-con">
+						<img src="<%=pcdata(c.icon)%>" onerror="this.style.visibility='hidden'" />
+					</div>
+				</div>
+				<div class="pure-u-2-3">
+					<h4 id="status_<%=c.id%>"><%=pcdata(c.remarks)%><br /><span id="_<%=c.id%>_status" class="red"><%:Touch Check%></span></h4>
+				</div>
+			</div>
+		</div>
+<% end %>
+<% else %>
 		<div class="pure-u-1-4 check" onclick="check_connect('baidu', 'https://www.baidu.com')">
 			<div class="block pure-g">
 				<div class="pure-u-1-3">
@@ -131,6 +173,7 @@ https://github.com/pure-css/pure/blob/master/LICENSE.md
 				</div>
 			</div>
 		</div>
+<% end %>
 	  </div>
 	<script>
 		//<![CDATA[
@@ -193,5 +236,126 @@ https://github.com/pure-css/pure/blob/master/LICENSE.md
 			return false;
 		}
 //]]>
+	</script>
+
+	<style>
+		#pw2_ipbar {
+			position: fixed;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			z-index: 999;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 6px 16px;
+			background: rgba(255,255,255,.92);
+			backdrop-filter: blur(6px);
+			-webkit-backdrop-filter: blur(6px);
+			box-shadow: 0 -2px 12px rgba(136,152,170,.25);
+			font-family: inherit;
+		}
+		@media (prefers-color-scheme: dark) {
+			#pw2_ipbar {
+				background: rgba(32,32,36,.92);
+			}
+			#pw2_ipbar .pw2-ip-addr { color: #eee !important; }
+		}
+		#pw2_ipbar .pw2-ip-left {
+			display: flex;
+			align-items: center;
+			cursor: pointer;
+			min-width: 0;
+		}
+		#pw2_ipbar .pw2-ip-flag {
+			font-size: 26px;
+			line-height: 1;
+			margin-right: 10px;
+		}
+		#pw2_ipbar .pw2-ip-text {
+			display: flex;
+			flex-direction: column;
+			line-height: 1.35;
+			min-width: 0;
+		}
+		#pw2_ipbar .pw2-ip-addr {
+			font-weight: 600;
+			font-size: .9rem;
+			color: #32325d;
+		}
+		#pw2_ipbar .pw2-ip-geo {
+			font-size: .78rem;
+			color: #8898aa;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		#pw2_ipbar .pw2-ip-right {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+		#pw2_ipbar .pw2-ip-right a {
+			display: inline-flex;
+		}
+		#pw2_ipbar .pw2-ip-right img {
+			width: 26px !important;
+			height: 26px !important;
+			border-radius: 50%;
+		}
+		@media screen and (max-width: 480px) {
+			#pw2_ipbar .pw2-ip-right { display: none; }
+		}
+	</style>
+	<div id="pw2_ipbar">
+		<div class="pw2-ip-left" onclick="pw2_ipinfo()" title="<%:Click to refresh%>">
+			<span class="pw2-ip-flag" id="pw2_ip_flag">&#127760;</span>
+			<div class="pw2-ip-text">
+				<span class="pw2-ip-addr" id="pw2_ip_addr"><%:Getting IP info...%></span>
+				<span class="pw2-ip-geo" id="pw2_ip_geo"></span>
+			</div>
+		</div>
+		<div class="pw2-ip-right">
+			<% for _, c in ipairs(bar_sites) do %>
+			<a href="<%=pcdata(c.url)%>" target="_blank" title="<%=pcdata(c.remarks)%>"><img src="<%=pcdata(c.icon)%>" onerror="this.parentNode.style.display='none'" /></a>
+			<% end %>
+		</div>
+	</div>
+	<script>
+	//<![CDATA[
+		document.body.style.paddingBottom = '52px';
+		var pw2_ip_loading = false;
+		function pw2_ipinfo() {
+			if (pw2_ip_loading) return;
+			pw2_ip_loading = true;
+			var addr = document.getElementById('pw2_ip_addr');
+			var geo = document.getElementById('pw2_ip_geo');
+			var flag = document.getElementById('pw2_ip_flag');
+			addr.innerHTML = '<%:Getting IP info...%>';
+			XHR.get('<%=api.url("get_ip_info")%>', null, function(x, d) {
+				pw2_ip_loading = false;
+				if (d && d.ip) {
+					addr.innerHTML = d.ip;
+					var parts = [];
+					if (d.country) parts.push(d.country);
+					if (d.region && d.region !== d.country) parts.push(d.region);
+					var isp = d.isp || d.org || '';
+					if (isp) parts.push(isp);
+					geo.innerHTML = parts.join(' ');
+					if (d.country_code && d.country_code.length === 2) {
+						var cc = d.country_code.toUpperCase();
+						flag.innerHTML = String.fromCodePoint(0x1F1E6 + cc.charCodeAt(0) - 65, 0x1F1E6 + cc.charCodeAt(1) - 65);
+					} else {
+						flag.innerHTML = '🌐';
+					}
+				} else {
+					addr.innerHTML = '<%:Failed to get IP info, click to retry%>';
+					geo.innerHTML = '';
+					flag.innerHTML = '🌐';
+				}
+			});
+		}
+		setTimeout(pw2_ipinfo, 300);
+	//]]>
 	</script>
 </fieldset>

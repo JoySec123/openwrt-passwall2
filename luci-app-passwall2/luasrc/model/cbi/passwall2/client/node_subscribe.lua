@@ -179,6 +179,15 @@ o.write = function(self, section, value)
 	return Value.write(self, section, value)
 end
 
+-- count the nodes of every group once, counting per row is slow with many nodes
+local group_node_count = {}
+m.uci:foreach(appname, "nodes", function(s)
+	if s["group"] and s["group"] ~= "" then
+		local g = s["group"]:lower()
+		group_node_count[g] = (group_node_count[g] or 0) + 1
+	end
+end)
+
 o = s:option(DummyValue, "_node_count", translate("Subscribe Info"))
 o.rawhtml = true
 o.cfgvalue = function(t, n)
@@ -189,12 +198,7 @@ o.cfgvalue = function(t, n)
 		str = str .. (str ~= "" and "/" or "") .. expired_date
 	end
 	str = str ~= "" and "<br>" .. str or ""
-	local num = 0
-	m.uci:foreach(appname, "nodes", function(s)
-		if s["group"] and s["group"]:lower() == remark:lower() then
-			num = num + 1
-		end
-	end)
+	local num = group_node_count[remark:lower()] or 0
 	return string.format("%s%s", translate("Node num") .. ": " .. num, str)
 end
 

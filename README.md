@@ -4,6 +4,16 @@
 [![OpenWrt](https://img.shields.io/badge/OpenWrt-21.02%2B-blue)](https://openwrt.org/)
 [![LuCI](https://img.shields.io/badge/LuCI-19.07%2B-green)](https://github.com/openwrt/luci)
 
+> **本 Fork 的修改** (based on upstream 26.6.16):
+>
+> - **模式 tab**(基本设置):类似 PassWall 1 的快捷模式 —— 直连/代理/屏蔽/GFW 列表开关、中国列表策略(忽略/直连/代理)、默认代理模式,以及 GFW 列表 / 中国列表以外 / 中国列表 / 全局代理 一键切换。基于 passwall2 原生分流机制实现(自动托管一个「快捷模式」分流节点),不改动防火墙脚本。
+> - **出口 IP 与地理位置**:状态页底部常驻信息栏,显示 国旗 + IP + 国家/地区 + 运营商,点击刷新。
+> - **自定义连接检测网站**:「高级设置」中可自由增删状态页顶部的检测站点(备注/检测地址/图标,图标默认取网站 favicon)。
+> - **大量节点时的卡顿优化**:节点列表接口只返回必要字段、自动测延迟并发 20→5、延迟缓存 60s→300s、订阅页节点计数改为一次统计。
+> - 简体中文翻译已打包进主 ipk,单包安装即可(安装前请先 `opkg remove luci-i18n-passwall2-zh-cn` 避免文件冲突)。
+>
+> 构建产物见 [Releases](../../releases);适用于 OpenWrt/iStoreOS 24.10(LuCI Lua/luci-compat),包架构为 `all`。
+
 PassWall2 is a powerful LuCI web interface application for OpenWrt that provides advanced proxy and VPN functionality. It's a comprehensive solution for network traffic management, proxy services, and access control on OpenWrt-based routers.
 
 ## 🛠️ Installation

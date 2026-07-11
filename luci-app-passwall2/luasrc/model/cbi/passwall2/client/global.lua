@@ -93,10 +93,25 @@ o.group = {""}
 current_node_id = m.uci:get(appname, global_cfgid, "node")
 current_node = current_node_id and m.uci:get_all(appname, current_node_id) or {}
 
+-- Quick Mode (auto-managed shunt node)
+local mode_node_id = "PW2_MODE"
+
+---- show the real node in the selector when Quick Mode is managing the node
+s.fields["node"].cfgvalue = function(self, section)
+	local v = m.uci:get(appname, section, "node")
+	if v == mode_node_id then
+		local real = m.uci:get(appname, section, "mode_real_node")
+		if real and m.uci:get(appname, real) then
+			return real
+		end
+	end
+	return v or ""
+end
+
 -- Shunt Start
 if (has_singbox or has_xray) and #nodes_table > 0 then
 	if #normal_list > 0 or #iface_list > 0 then
-		if current_node.protocol == "_shunt" then
+		if current_node.protocol == "_shunt" and current_node_id ~= mode_node_id then
 			local shunt_lua = loadfile("/usr/lib/lua/luci/model/cbi/passwall2/client/include/shunt_options.lua")
 			setfenv(shunt_lua, getfenv(1))(m, s, {
 				node_id = current_node_id,
@@ -125,6 +140,201 @@ if (has_singbox or has_xray) and #nodes_table > 0 then
 			tips:depends("node", v.id)
 		end
 	end
+end
+
+-- [[ Quick Mode ]]--
+s:tab("Mode", translate("Mode"))
+
+local mode_rule_defs = {
+	{id = "PW_Block", remarks = translate("Block List"), domain_list = "", ip_list = ""},
+	{id = "PW_Direct", remarks = translate("Direct List"), domain_list = "", ip_list = ""},
+	{id = "PW_Proxy", remarks = translate("Proxy List"), domain_list = "", ip_list = ""},
+	{id = "PW_Gfw", remarks = translate("GFW List"), domain_list = "geosite:gfw", ip_list = ""},
+	{id = "PW_China", remarks = translate("China List"), domain_list = "geosite:cn", ip_list = "geoip:cn"},
+}
+
+local function mode_rule_link(sid)
+	if m.uci:get(appname, sid) then
+		return string.format('&nbsp;&nbsp;<a href="%s">%s</a>', api.url("shunt_rules", sid), translate("Edit"))
+	end
+	return ""
+end
+
+o = s:taboption("Mode", Flag, "mode_enabled", translate("Enable Quick Mode"),
+	translate("When enabled, a shunt node named 'Quick Mode' will be automatically created and managed, and the node you selected above will be used as its proxy outbound.") .. "<br />" ..
+	translate("The proxy behavior is implemented by the core (Xray/Sing-Box) routing rules, custom shunt nodes will not be affected."))
+o.default = "0"
+o.rmempty = false
+o.validate = function(self, value, section)
+	if value == "1" then
+		local node_value = s.fields["node"]:formvalue(section) or ""
+		if node_value == mode_node_id then
+			node_value = m.uci:get(appname, section, "mode_real_node") or ""
+		end
+		local node_t = (node_value ~= "" and node_value ~= mode_node_id) and m.uci:get_all(appname, node_value) or nil
+		if not node_t then
+			return nil, translate("Quick Mode: Please select an available node first.")
+		end
+		if node_t.protocol == "_shunt" then
+			return nil, translate("Quick Mode: Please select a normal node as the proxy outbound, not a shunt node.")
+		end
+	end
+	return value
+end
+
+o = s:taboption("Mode", Flag, "use_direct_list", translate("Use Direct List") .. mode_rule_link("PW_Direct"))
+o.default = "1"
+o.rmempty = false
+o:depends("mode_enabled", true)
+
+o = s:taboption("Mode", Flag, "use_proxy_list", translate("Use Proxy List") .. mode_rule_link("PW_Proxy"))
+o.default = "1"
+o.rmempty = false
+o:depends("mode_enabled", true)
+
+o = s:taboption("Mode", Flag, "use_block_list", translate("Use Block List") .. mode_rule_link("PW_Block"))
+o.default = "1"
+o.rmempty = false
+o:depends("mode_enabled", true)
+
+o = s:taboption("Mode", Flag, "use_gfw_list", translate("Use GFW List") .. mode_rule_link("PW_Gfw"))
+o.default = "1"
+o.rmempty = false
+o:depends("mode_enabled", true)
+
+o = s:taboption("Mode", ListValue, "chn_list", translate("China List") .. mode_rule_link("PW_China"))
+o.default = "direct"
+o:value("0", translate("Ignore"))
+o:value("direct", translate("Direct Connection"))
+o:value("proxy", translate("Proxy"))
+o:depends("mode_enabled", true)
+
+o = s:taboption("Mode", ListValue, "mode_default", translate("Default Proxy Mode"),
+	translate("How to handle traffic not matched by any list above."))
+o.default = "proxy"
+o:value("proxy", translate("Proxy"))
+o:value("direct", translate("Direct Connection"))
+o:depends("mode_enabled", true)
+
+o = s:taboption("Mode", DummyValue, "_mode_switch", translate("Switch Mode"))
+o.rawhtml = true
+o:depends("mode_enabled", true)
+o.cfgvalue = function(t, n)
+	local prefix = "cbid." .. appname .. "." .. n .. "."
+	return string.format([[
+		<button type="button" class="cbi-button cbi-button-action" onclick="pw2_mode_switch('1','0','direct')">%s</button>
+		<button type="button" class="cbi-button cbi-button-action" onclick="pw2_mode_switch('1','direct','proxy')">%s</button>
+		<button type="button" class="cbi-button cbi-button-action" onclick="pw2_mode_switch('0','proxy','direct')">%s</button>
+		<button type="button" class="cbi-button cbi-button-action" onclick="pw2_mode_switch('0','0','proxy')">%s</button>
+		<script type="text/javascript">
+		function pw2_mode_switch(gfw, chn, def) {
+			var p = '%s';
+			var e = document.getElementById(p + 'mode_enabled'); if (e) e.checked = true;
+			var g = document.getElementById(p + 'use_gfw_list'); if (g) g.checked = (gfw == '1');
+			var c = document.getElementById(p + 'chn_list'); if (c) c.value = chn;
+			var d = document.getElementById(p + 'mode_default'); if (d) d.value = def;
+			var btn = document.querySelector('input[name="cbi.apply"],button[name="cbi.apply"]') || document.querySelector('.cbi-page-actions .cbi-button-apply');
+			if (btn) btn.click();
+		}
+		</script>]],
+		translate("GFW List"), translate("Not China List"), translate("China List"), translate("Global Proxy"), prefix)
+end
+
+function m.on_before_save(self)
+	local sid = global_cfgid
+	local fv = function(name)
+		return s.fields[name] and s.fields[name]:formvalue(sid) or nil
+	end
+	local enabled = fv("mode_enabled")
+	local node_value = fv("node")
+	if enabled ~= "1" then
+		-- when Quick Mode is off, make sure the real node is restored
+		if (m.uci:get(appname, sid, "node") or node_value) == mode_node_id then
+			local real = m.uci:get(appname, sid, "mode_real_node")
+			if node_value and node_value ~= "" and node_value ~= mode_node_id then
+				real = node_value
+			end
+			if real and m.uci:get(appname, real) then
+				m.uci:set(appname, sid, "node", real)
+			end
+		end
+		return
+	end
+	local real = node_value
+	if real == mode_node_id or not real or real == "" then
+		real = m.uci:get(appname, sid, "mode_real_node")
+	end
+	if not real or real == "" or real == mode_node_id or not m.uci:get(appname, real) then
+		return
+	end
+	local real_t = m.uci:get_all(appname, real) or {}
+	if real_t.protocol == "_shunt" then
+		return
+	end
+
+	-- 1. (re)create the mode rules in priority order (block > direct > proxy > gfw > china), keep user lists
+	for _, r in ipairs(mode_rule_defs) do
+		local old = m.uci:get_all(appname, r.id)
+		local domain_list = old and (old.domain_list or "") or r.domain_list
+		local ip_list = old and (old.ip_list or "") or r.ip_list
+		m.uci:delete(appname, r.id)
+		m.uci:section(appname, "shunt_rules", r.id, {
+			remarks = r.remarks,
+			network = "tcp,udp"
+		})
+		if domain_list and domain_list ~= "" then
+			m.uci:set(appname, r.id, "domain_list", domain_list)
+		end
+		if ip_list and ip_list ~= "" then
+			m.uci:set(appname, r.id, "ip_list", ip_list)
+		end
+	end
+
+	-- 2. (re)create the mode shunt node
+	local ntype = real_t.type
+	if ntype ~= "Xray" and ntype ~= "sing-box" then
+		ntype = has_xray and "Xray" or (has_singbox and "sing-box") or "Xray"
+	end
+	local chn = fv("chn_list") or "direct"
+	local def_mode = fv("mode_default") or "proxy"
+	m.uci:delete(appname, mode_node_id)
+	m.uci:section(appname, "nodes", mode_node_id, {
+		remarks = translate("Quick Mode"),
+		type = ntype,
+		protocol = "_shunt",
+		domainStrategy = "IPOnDemand",
+		domainMatcher = "hybrid",
+		write_ipset_direct = "1",
+		default_node = (def_mode == "proxy") and real or "_direct"
+	})
+	if api.finded_com("geoview") then
+		m.uci:set(appname, mode_node_id, "enable_geoview_ip", "1")
+	end
+	if m.uci:get(appname, "PrivateIP") then
+		m.uci:set(appname, mode_node_id, "PrivateIP", "_direct")
+	end
+	if fv("use_block_list") == "1" then
+		m.uci:set(appname, mode_node_id, "PW_Block", "_blackhole")
+	end
+	if fv("use_direct_list") == "1" then
+		m.uci:set(appname, mode_node_id, "PW_Direct", "_direct")
+	end
+	if fv("use_proxy_list") == "1" then
+		m.uci:set(appname, mode_node_id, "PW_Proxy", real)
+	end
+	if fv("use_gfw_list") == "1" then
+		m.uci:set(appname, mode_node_id, "PW_Gfw", real)
+	end
+	if chn == "direct" then
+		m.uci:set(appname, mode_node_id, "PW_China", "_direct")
+	elseif chn == "proxy" then
+		m.uci:set(appname, mode_node_id, "PW_China", real)
+	end
+
+	-- 3. use the mode node and remember the real node
+	m.uci:set(appname, sid, "mode_real_node", real)
+	m.uci:set(appname, sid, "node", mode_node_id)
+	m.uci:set(appname, sid, "flush_set", "1")
 end
 
 ---- Check the transparent proxy component

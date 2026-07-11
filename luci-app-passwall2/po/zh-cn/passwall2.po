@@ -2380,3 +2380,87 @@ msgstr "订阅完毕..."
 
 msgid "Processing, please wait…"
 msgstr "正在处理，请稍候。"
+
+msgid "Enable Quick Mode"
+msgstr "启用快捷模式"
+
+msgid "Quick Mode"
+msgstr "快捷模式"
+
+msgid "When enabled, a shunt node named 'Quick Mode' will be automatically created and managed, and the node you selected above will be used as its proxy outbound."
+msgstr "启用后将自动创建并接管一个名为「快捷模式」的分流节点，您在上方选择的节点将作为其代理出口。"
+
+msgid "The proxy behavior is implemented by the core (Xray/Sing-Box) routing rules, custom shunt nodes will not be affected."
+msgstr "代理行为由内核（Xray/Sing-Box）路由规则实现，不影响您自定义的分流节点。"
+
+msgid "Quick Mode: Please select an available node first."
+msgstr "快捷模式：请先选择一个可用节点。"
+
+msgid "Quick Mode: Please select a normal node as the proxy outbound, not a shunt node."
+msgstr "快捷模式：请选择普通节点作为代理出口，不能选择分流节点。"
+
+msgid "Use Direct List"
+msgstr "使用 直连列表"
+
+msgid "Use Proxy List"
+msgstr "使用 代理列表"
+
+msgid "Use Block List"
+msgstr "使用 屏蔽列表"
+
+msgid "Use GFW List"
+msgstr "使用 GFW 列表"
+
+msgid "China List"
+msgstr "中国列表"
+
+msgid "GFW List"
+msgstr "GFW 列表"
+
+msgid "Default Proxy Mode"
+msgstr "默认代理模式"
+
+msgid "How to handle traffic not matched by any list above."
+msgstr "未命中上述任何列表的流量如何处理。"
+
+msgid "Switch Mode"
+msgstr "切换模式"
+
+msgid "Not China List"
+msgstr "中国列表以外"
+
+msgid "Global Proxy"
+msgstr "全局代理"
+
+msgid "Ignore"
+msgstr "忽略"
+
+msgid "Edit"
+msgstr "编辑"
+
+msgid "Getting IP info..."
+msgstr "正在获取 IP 信息..."
+
+msgid "Failed to get IP info, click to retry"
+msgstr "获取 IP 信息失败，点击重试"
+
+msgid "Click to refresh"
+msgstr "点击刷新"
+
+msgid "Connectivity Check Sites"
+msgstr "连接检测网站"
+
+msgid "Customize the connectivity check sites shown on the status page."
+msgstr "自定义状态页顶部的连接检测网站。"
+
+msgid "If no site is defined here, the default sites (Baidu/Google/GitHub) will be used."
+msgstr "如果此处未定义任何网站，将使用默认网站（百度/谷歌/GitHub）。"
+
+msgid "Icon URL is optional, the favicon of the site will be used by default."
+msgstr "图标地址为可选项，默认使用网站的 favicon 图标。"
+
+msgid "Check URL"
+msgstr "检测地址"
+
+msgid "Icon URL"
+msgstr "图标地址"

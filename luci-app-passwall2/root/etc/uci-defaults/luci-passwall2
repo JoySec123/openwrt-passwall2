@@ -51,6 +51,23 @@ uci -q delete passwall2.@global_xray[0].sniffing
 uci -q delete passwall2.@global_xray[0].route_only
 uci -q commit passwall2
 
+# Quick Mode shunt rules
+add_mode_rule() {
+	local name="$1" remarks="$2" domains="$3" ips="$4"
+	[ -n "$(uci -q get passwall2.$name)" ] && return
+	uci -q set passwall2.$name=shunt_rules
+	uci -q set passwall2.$name.remarks="$remarks"
+	uci -q set passwall2.$name.network='tcp,udp'
+	[ -n "$domains" ] && uci -q set passwall2.$name.domain_list="$domains"
+	[ -n "$ips" ] && uci -q set passwall2.$name.ip_list="$ips"
+}
+add_mode_rule "PW_Block" "屏蔽列表"
+add_mode_rule "PW_Direct" "直连列表"
+add_mode_rule "PW_Proxy" "代理列表"
+add_mode_rule "PW_Gfw" "GFW列表" "geosite:gfw"
+add_mode_rule "PW_China" "中国列表" "geosite:cn" "geoip:cn"
+uci -q commit passwall2
+
 sed -i "s#add_from#group#g" /etc/config/passwall2 2>/dev/null
 
 rm -f /tmp/luci-indexcache /tmp/luci-indexcache.*

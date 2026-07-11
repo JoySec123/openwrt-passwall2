@@ -105,6 +105,29 @@ config shunt_rules 'PrivateIP'
 192.0.2.0/24
 203.0.113.0/24'
 
+config shunt_rules 'PW_Block'
+	option remarks '屏蔽列表'
+	option network 'tcp,udp'
+
+config shunt_rules 'PW_Direct'
+	option remarks '直连列表'
+	option network 'tcp,udp'
+
+config shunt_rules 'PW_Proxy'
+	option remarks '代理列表'
+	option network 'tcp,udp'
+
+config shunt_rules 'PW_Gfw'
+	option remarks 'GFW列表'
+	option network 'tcp,udp'
+	option domain_list 'geosite:gfw'
+
+config shunt_rules 'PW_China'
+	option remarks '中国列表'
+	option network 'tcp,udp'
+	option domain_list 'geosite:cn'
+	option ip_list 'geoip:cn'
+
 config nodes 'examplenode'
 	option remarks 'Example'
 	option type 'Xray'

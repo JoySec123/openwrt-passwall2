@@ -245,6 +245,34 @@ if has_xray then
 	o.rmempty = false
 end
 
+-- [[ Connectivity Check Sites ]]--
+s = m:section(TypedSection, "status_check", translate("Connectivity Check Sites"),
+	translate("Customize the connectivity check sites shown on the status page.") .. "<br />" ..
+	translate("If no site is defined here, the default sites (Baidu/Google/GitHub) will be used.") .. "<br />" ..
+	translate("Icon URL is optional, the favicon of the site will be used by default."))
+s.template = "cbi/tblsection"
+s.anonymous = true
+s.addremove = true
+s.create = function(e, t)
+	TypedSection.create(e, api.gen_short_uuid())
+end
+
+o = s:option(Flag, "enabled", translate("Enable"))
+o.default = 1
+o.rmempty = false
+
+o = s:option(Value, "remarks", translate("Remarks"))
+o.placeholder = "YouTube"
+o.rmempty = true
+
+o = s:option(Value, "url", translate("Check URL"))
+o.placeholder = "https://www.youtube.com/generate_204"
+o.rmempty = true
+
+o = s:option(Value, "icon", translate("Icon URL"))
+o.placeholder = "https://www.youtube.com/favicon.ico"
+o.rmempty = true
+
 if has_singbox then
 	s = m:section(TypedSection, "global_singbox", "Sing-Box " .. translate("Settings"))
 	s.anonymous = true

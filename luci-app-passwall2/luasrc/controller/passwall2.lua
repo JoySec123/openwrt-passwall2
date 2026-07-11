@@ -76,6 +76,7 @@ function index()
 	entry({"admin", "services", appname, "haproxy_status"}, call("haproxy_status")).leaf = true
 	entry({"admin", "services", appname, "socks_status"}, call("socks_status")).leaf = true
 	entry({"admin", "services", appname, "connect_status"}, call("connect_status")).leaf = true
+	entry({"admin", "services", appname, "get_ip_info"}, call("get_ip_info")).leaf = true
 	entry({"admin", "services", appname, "ping_node"}, call("ping_node")).leaf = true
 	entry({"admin", "services", appname, "urltest_node"}, call("urltest_node")).leaf = true
 	entry({"admin", "services", appname, "add_node"}, call("add_node")).leaf = true
@@ -313,6 +314,34 @@ function connect_status()
 			e.use_time = string.format("%.2f", use_time / 1000)
 		end
 		e.ping_type = "curl"
+	end
+	http_write_json(e)
+end
+
+function get_ip_info()
+	local e = {}
+	local result = luci.sys.exec("curl -sL --connect-timeout 5 -m 10 'http://ip-api.com/json/?lang=zh-CN&fields=status,message,country,countryCode,regionName,city,isp,org,query' 2>/dev/null")
+	local json = jsonParse(result or "")
+	if json and json.status == "success" and json.query then
+		e.ip = json.query
+		e.country = json.country or ""
+		e.country_code = json.countryCode or ""
+		e.region = json.regionName or ""
+		e.city = json.city or ""
+		e.isp = json.isp or ""
+		e.org = json.org or ""
+	else
+		result = luci.sys.exec("curl -skL --connect-timeout 5 -m 10 -A 'Mozilla/5.0' 'https://api.ip.sb/geoip' 2>/dev/null")
+		json = jsonParse(result or "")
+		if json and json.ip then
+			e.ip = json.ip
+			e.country = json.country or ""
+			e.country_code = json.country_code or ""
+			e.region = json.region or ""
+			e.city = json.city or ""
+			e.isp = json.isp or json.organization or ""
+			e.org = json.organization or ""
+		end
 	end
 	http_write_json(e)
 end
@@ -557,10 +586,24 @@ function get_node()
 		result = uci:get_all(appname, id)
 		add_is_ipv6_key(result)
 	else
+		-- only return the fields used by the node list page, the full config of
+		-- hundreds of nodes makes the JSON response huge and the page laggy
+		local list_fields = {
+			".name", "type", "protocol", "remarks", "address", "port", "group",
+			"hysteria_hop", "hysteria2_hop", "hysteria2_realms", "full_address", "ipv6"
+		}
+		local function slim(t)
+			local r = {}
+			for _, k in ipairs(list_fields) do
+				r[k] = t[k]
+			end
+			return r
+		end
 		local default_nodes = {}
 		local other_nodes = {}
 		uci:foreach(appname, "nodes", function(t)
 			add_is_ipv6_key(t)
+			t = slim(t)
 			if not t.group or t.group == "" then
 				default_nodes[#default_nodes + 1] = t
 			else
