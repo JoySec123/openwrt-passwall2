@@ -160,6 +160,28 @@ local function mode_rule_link(sid)
 	return ""
 end
 
+-- a rule without any real domain/ip entry would match ALL traffic in the core
+-- (e.g. an empty block list would blackhole everything), so empty rules must
+-- not be attached to the mode node
+local function mode_rule_has_content(sid)
+	local t = m.uci:get_all(appname, sid)
+	if not t then
+		return false
+	end
+	for _, opt in ipairs({"domain_list", "ip_list"}) do
+		local v = t[opt]
+		if v and v ~= "" then
+			for line in v:gmatch("[^\r\n]+") do
+				line = line:gsub("^%s+", "")
+				if #line > 0 and line:find("#") ~= 1 then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
 o = s:taboption("Mode", Flag, "mode_enabled", translate("Enable Quick Mode"),
 	translate("When enabled, a shunt node named 'Quick Mode' will be automatically created and managed, and the node you selected above will be used as its proxy outbound.") .. "<br />" ..
 	translate("The proxy behavior is implemented by the core (Xray/Sing-Box) routing rules, custom shunt nodes will not be affected."))
@@ -182,17 +204,20 @@ o.validate = function(self, value, section)
 	return value
 end
 
-o = s:taboption("Mode", Flag, "use_direct_list", translate("Use Direct List") .. mode_rule_link("PW_Direct"))
+o = s:taboption("Mode", Flag, "use_direct_list", translate("Use Direct List") .. mode_rule_link("PW_Direct"),
+	translate("The rule is skipped while its list is empty."))
 o.default = "1"
 o.rmempty = false
 o:depends("mode_enabled", true)
 
-o = s:taboption("Mode", Flag, "use_proxy_list", translate("Use Proxy List") .. mode_rule_link("PW_Proxy"))
+o = s:taboption("Mode", Flag, "use_proxy_list", translate("Use Proxy List") .. mode_rule_link("PW_Proxy"),
+	translate("The rule is skipped while its list is empty."))
 o.default = "1"
 o.rmempty = false
 o:depends("mode_enabled", true)
 
-o = s:taboption("Mode", Flag, "use_block_list", translate("Use Block List") .. mode_rule_link("PW_Block"))
+o = s:taboption("Mode", Flag, "use_block_list", translate("Use Block List") .. mode_rule_link("PW_Block"),
+	translate("The rule is skipped while its list is empty."))
 o.default = "1"
 o.rmempty = false
 o:depends("mode_enabled", true)
@@ -313,17 +338,20 @@ function m.on_before_save(self)
 	if m.uci:get(appname, "PrivateIP") then
 		m.uci:set(appname, mode_node_id, "PrivateIP", "_direct")
 	end
-	if fv("use_block_list") == "1" then
+	if fv("use_block_list") == "1" and mode_rule_has_content("PW_Block") then
 		m.uci:set(appname, mode_node_id, "PW_Block", "_blackhole")
 	end
-	if fv("use_direct_list") == "1" then
+	if fv("use_direct_list") == "1" and mode_rule_has_content("PW_Direct") then
 		m.uci:set(appname, mode_node_id, "PW_Direct", "_direct")
 	end
-	if fv("use_proxy_list") == "1" then
+	if fv("use_proxy_list") == "1" and mode_rule_has_content("PW_Proxy") then
 		m.uci:set(appname, mode_node_id, "PW_Proxy", real)
 	end
-	if fv("use_gfw_list") == "1" then
+	if fv("use_gfw_list") == "1" and mode_rule_has_content("PW_Gfw") then
 		m.uci:set(appname, mode_node_id, "PW_Gfw", real)
+	end
+	if chn ~= "0" and not mode_rule_has_content("PW_China") then
+		chn = "0"
 	end
 	if chn == "direct" then
 		m.uci:set(appname, mode_node_id, "PW_China", "_direct")

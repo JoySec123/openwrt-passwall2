@@ -2464,3 +2464,6 @@ msgstr "检测地址"
 
 msgid "Icon URL"
 msgstr "图标地址"
+
+msgid "The rule is skipped while its list is empty."
+msgstr "列表为空时该规则自动跳过（不生效）。"
