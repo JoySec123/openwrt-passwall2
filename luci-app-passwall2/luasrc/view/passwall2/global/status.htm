@@ -240,26 +240,16 @@ https://github.com/pure-css/pure/blob/master/LICENSE.md
 
 	<style>
 		#pw2_ipbar {
-			position: fixed;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			z-index: 999;
+			margin: 0.5rem;
+			padding: 0.6rem 1rem;
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
-			padding: 6px 16px;
-			background: rgba(255,255,255,.92);
-			backdrop-filter: blur(6px);
-			-webkit-backdrop-filter: blur(6px);
-			box-shadow: 0 -2px 12px rgba(136,152,170,.25);
-			font-family: inherit;
-		}
-		@media (prefers-color-scheme: dark) {
-			#pw2_ipbar {
-				background: rgba(32,32,36,.92);
-			}
-			#pw2_ipbar .pw2-ip-addr { color: #eee !important; }
+			flex-wrap: wrap;
+			gap: 0.5rem;
+			border: 1px solid rgba(0,0,0,.05);
+			border-radius: .375rem;
+			box-shadow: 0 0 2rem 0 rgba(136,152,170,.15);
 		}
 		#pw2_ipbar .pw2-ip-left {
 			display: flex;
@@ -272,23 +262,14 @@ https://github.com/pure-css/pure/blob/master/LICENSE.md
 			line-height: 1;
 			margin-right: 10px;
 		}
-		#pw2_ipbar .pw2-ip-text {
-			display: flex;
-			flex-direction: column;
-			line-height: 1.35;
-			min-width: 0;
-		}
 		#pw2_ipbar .pw2-ip-addr {
 			font-weight: 600;
-			font-size: .9rem;
-			color: #32325d;
+			font-size: .875rem;
 		}
 		#pw2_ipbar .pw2-ip-geo {
-			font-size: .78rem;
+			font-size: .8125rem;
 			color: #8898aa;
-			white-space: nowrap;
-			overflow: hidden;
-			text-overflow: ellipsis;
+			margin-left: 0.6rem;
 		}
 		#pw2_ipbar .pw2-ip-right {
 			display: flex;
@@ -299,21 +280,18 @@ https://github.com/pure-css/pure/blob/master/LICENSE.md
 			display: inline-flex;
 		}
 		#pw2_ipbar .pw2-ip-right img {
-			width: 26px !important;
-			height: 26px !important;
+			width: 24px !important;
+			height: 24px !important;
 			border-radius: 50%;
-		}
-		@media screen and (max-width: 480px) {
-			#pw2_ipbar .pw2-ip-right { display: none; }
 		}
 	</style>
 	<div id="pw2_ipbar">
 		<div class="pw2-ip-left" onclick="pw2_ipinfo()" title="<%:Click to refresh%>">
 			<span class="pw2-ip-flag" id="pw2_ip_flag">&#127760;</span>
-			<div class="pw2-ip-text">
+			<span>
 				<span class="pw2-ip-addr" id="pw2_ip_addr"><%:Getting IP info...%></span>
 				<span class="pw2-ip-geo" id="pw2_ip_geo"></span>
-			</div>
+			</span>
 		</div>
 		<div class="pw2-ip-right">
 			<% for _, c in ipairs(bar_sites) do %>
@@ -323,7 +301,6 @@ https://github.com/pure-css/pure/blob/master/LICENSE.md
 	</div>
 	<script>
 	//<![CDATA[
-		document.body.style.paddingBottom = '52px';
 		var pw2_ip_loading = false;
 		function pw2_ipinfo() {
 			if (pw2_ip_loading) return;
