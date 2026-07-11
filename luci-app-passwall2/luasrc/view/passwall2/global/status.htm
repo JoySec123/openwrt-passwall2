@@ -10,19 +10,19 @@ local builtin_cats = {
 	}},
 	{id = "ai", name = "AI", sites = {
 		{remarks = "ChatGPT", url = "https://chatgpt.com"},
-		{remarks = "Claude", url = "https://claude.ai"},
+		{remarks = "Claude", url = "https://claude.ai", icon = "https://www.anthropic.com/favicon.ico"},
 		{remarks = "Gemini", url = "https://gemini.google.com", icon = "https://www.gstatic.com/lamda/images/gemini_favicon_f069958c85030456e93de685481c559f160ea06b.png"},
-		{remarks = "Grok", url = "https://grok.com"},
-		{remarks = "DeepSeek", url = "https://chat.deepseek.com"},
+		{remarks = "Grok", url = "https://grok.com", icon = "https://x.ai/favicon.ico"},
+		{remarks = "DeepSeek", url = "https://chat.deepseek.com", icon = "https://www.deepseek.com/favicon.ico"},
 		{remarks = "Perplexity", url = "https://www.perplexity.ai"},
 		{remarks = "Kimi", url = "https://www.kimi.com"},
-		{remarks = translate("Qwen"), url = "https://tongyi.aliyun.com", icon = "https://img.alicdn.com/imgextra/i1/O1CN01AKUdIT28i9zPjuEma_!!6000000007966-2-tps-512-512.png"},
+		{remarks = translate("Qwen"), url = "https://tongyi.aliyun.com", icon = "https://img.alicdn.com/imgextra/i2/O1CN01taBbMS1CfyJoOt0lB_!!6000000000109-2-tps-80-80.png"},
 	}},
 	{id = "cloud", name = translate("Cloud"), sites = {
 		{remarks = translate("Aliyun"), url = "https://www.aliyun.com"},
 		{remarks = translate("Tencent Cloud"), url = "https://cloud.tencent.com"},
 		{remarks = translate("Huawei Cloud"), url = "https://www.huaweicloud.com"},
-		{remarks = "AWS", url = "https://aws.amazon.com"},
+		{remarks = "AWS", url = "https://aws.amazon.com", icon = "https://a0.awsstatic.com/libra-css/images/site/fav/favicon.ico"},
 		{remarks = "Azure", url = "https://azure.microsoft.com"},
 		{remarks = "Google Cloud", url = "https://cloud.google.com", icon = "https://www.gstatic.com/devrel-devsite/prod/v45f61267e22826169cf5d5f452882f7812c8cfab5e2f11c191f1a57ba6a5f79c/cloud/images/favicons/onecloud/favicon.ico"},
 		{remarks = "Cloudflare", url = "https://www.cloudflare.com"},
@@ -36,16 +36,16 @@ local builtin_cats = {
 		{remarks = "Telegram", url = "https://web.telegram.org"},
 		{remarks = "WhatsApp", url = "https://web.whatsapp.com"},
 		{remarks = "LINE", url = "https://line.me"},
-		{remarks = "Signal", url = "https://signal.org"},
+		{remarks = "Signal", url = "https://signal.org", icon = "https://signal.org/assets/images/favicon/favicon-32x32.png"},
 		{remarks = "Discord", url = "https://discord.com"},
 	}},
 }
 
 local function fill_icon(site)
+	site.host = site.url:match("^https?://([^/:]+)") or ""
 	if not site.icon or site.icon == "" then
-		local host = site.url:match("^https?://([^/:]+)")
 		local proto = site.url:match("^(https?)://") or "https"
-		site.icon = host and (proto .. "://" .. host .. "/favicon.ico") or ""
+		site.icon = (site.host ~= "") and (proto .. "://" .. site.host .. "/favicon.ico") or ""
 	end
 	return site
 end
@@ -188,6 +188,18 @@ https://github.com/pure-css/pure/blob/master/LICENSE.md
 </style>
 
 
+<script type="text/javascript">
+//<![CDATA[
+	function pw2_icon_err(img, host) {
+		if (!img.getAttribute('data-fb') && host) {
+			img.setAttribute('data-fb', '1');
+			img.src = 'https://www.google.com/s2/favicons?domain=' + host + '&sz=64';
+		} else {
+			img.style.visibility = 'hidden';
+		}
+	}
+//]]>
+</script>
 <fieldset id="_passwall2_status_fieldset" class="cbi-section">
 	<div class="pure-g status">
 		<div class="pure-u-1-4">
@@ -215,7 +227,7 @@ https://github.com/pure-css/pure/blob/master/LICENSE.md
 			<div class="block pure-g">
 				<div class="pure-u-1-3">
 					<div class="img-con">
-						<img src="<%=pcdata(site.icon)%>" onerror="this.style.visibility='hidden'" />
+						<img src="<%=pcdata(site.icon)%>" onerror="pw2_icon_err(this, '<%=site.host%>')" />
 					</div>
 				</div>
 				<div class="pure-u-2-3">
@@ -358,7 +370,7 @@ https://github.com/pure-css/pure/blob/master/LICENSE.md
 		</div>
 		<div class="pw2-ip-right">
 			<% for _, c in ipairs(bar_sites) do %>
-			<a href="<%=pcdata(c.url)%>" target="_blank" title="<%=pcdata(c.remarks)%>"><img src="<%=pcdata(c.icon)%>" onerror="this.parentNode.style.display='none'" /></a>
+			<a href="<%=pcdata(c.url)%>" target="_blank" title="<%=pcdata(c.remarks)%>"><img src="<%=pcdata(c.icon)%>" onerror="pw2_icon_err(this, '<%=c.host or ""%>')" /></a>
 			<% end %>
 		</div>
 	</div>
