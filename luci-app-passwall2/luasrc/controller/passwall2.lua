@@ -425,6 +425,28 @@ function set_node()
 	local type = http.formvalue("type")
 	local config = http.formvalue("config")
 	local section = http.formvalue("section")
+	-- Quick Mode: switching the global node from the node list must update the
+	-- proxy outbound of the mode shunt node instead of bypassing the mode
+	if type == "@global[0]" and config == "node" and section and section ~= "PW2_MODE" then
+		local mode_enabled = uci:get(appname, "@global[0]", "mode_enabled") or "0"
+		local mode_node = uci:get_all(appname, "PW2_MODE")
+		local target = uci:get_all(appname, section)
+		if mode_enabled == "1" and mode_node and target and target.protocol ~= "_shunt" then
+			local old = uci:get(appname, "@global[0]", "mode_real_node")
+			local specials = { ["_direct"] = true, ["_blackhole"] = true, ["_default"] = true, [""] = true }
+			for _, opt in ipairs({"default_node", "PW_Proxy", "PW_Gfw", "PW_China"}) do
+				local cur = mode_node[opt]
+				if cur and not specials[cur] and (cur == old or not uci:get(appname, cur)) then
+					uci:set(appname, "PW2_MODE", opt, section)
+				end
+			end
+			if target.type == "Xray" or target.type == "sing-box" then
+				uci:set(appname, "PW2_MODE", "type", target.type)
+			end
+			uci:set(appname, "@global[0]", "mode_real_node", section)
+			section = "PW2_MODE"
+		end
+	end
 	uci:set(appname, type, config, section)
 	api.uci_save(uci, appname, true, true)
 	http.redirect(api.url("log"))

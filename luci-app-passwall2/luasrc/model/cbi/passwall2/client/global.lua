@@ -96,12 +96,28 @@ current_node = current_node_id and m.uci:get_all(appname, current_node_id) or {}
 -- Quick Mode (auto-managed shunt node)
 local mode_node_id = "PW2_MODE"
 
+-- resolve the current proxy outbound of the mode node, healing a stale
+-- mode_real_node (e.g. after a subscription recreated the nodes)
+local function mode_find_real_node()
+	local real = m.uci:get(appname, global_cfgid, "mode_real_node")
+	if real and real ~= mode_node_id and m.uci:get(appname, real) then
+		return real
+	end
+	for _, opt in ipairs({"default_node", "PW_Proxy", "PW_Gfw", "PW_China"}) do
+		local v = m.uci:get(appname, mode_node_id, opt)
+		if v and v ~= "" and v ~= "_direct" and v ~= "_blackhole" and v ~= "_default" and v ~= mode_node_id and m.uci:get(appname, v) then
+			return v
+		end
+	end
+	return nil
+end
+
 ---- show the real node in the selector when Quick Mode is managing the node
 s.fields["node"].cfgvalue = function(self, section)
 	local v = m.uci:get(appname, section, "node")
 	if v == mode_node_id then
-		local real = m.uci:get(appname, section, "mode_real_node")
-		if real and m.uci:get(appname, real) then
+		local real = mode_find_real_node()
+		if real then
 			return real
 		end
 	end
@@ -191,7 +207,7 @@ o.validate = function(self, value, section)
 	if value == "1" then
 		local node_value = s.fields["node"]:formvalue(section) or ""
 		if node_value == mode_node_id then
-			node_value = m.uci:get(appname, section, "mode_real_node") or ""
+			node_value = mode_find_real_node() or ""
 		end
 		local node_t = (node_value ~= "" and node_value ~= mode_node_id) and m.uci:get_all(appname, node_value) or nil
 		if not node_t then
@@ -275,7 +291,7 @@ function m.on_before_save(self)
 	if enabled ~= "1" then
 		-- when Quick Mode is off, make sure the real node is restored
 		if (m.uci:get(appname, sid, "node") or node_value) == mode_node_id then
-			local real = m.uci:get(appname, sid, "mode_real_node")
+			local real = mode_find_real_node()
 			if node_value and node_value ~= "" and node_value ~= mode_node_id then
 				real = node_value
 			end
@@ -287,7 +303,7 @@ function m.on_before_save(self)
 	end
 	local real = node_value
 	if real == mode_node_id or not real or real == "" then
-		real = m.uci:get(appname, sid, "mode_real_node")
+		real = mode_find_real_node()
 	end
 	if not real or real == "" or real == mode_node_id or not m.uci:get(appname, real) then
 		return
